@@ -4,21 +4,32 @@
 
 ## 🚀 快速使用
 
+根据你的平台选择对应的程序下载
+
 ### Windows
 
-1. [点击下载](https://github.com/SaintWe/F11eSync/releases/latest/download/f11esync-windows-x64.zip) 程序，解压后运行 `f11esync-windows-x64.exe` 即可
+- [点击下载](https://github.com/SaintWe/F11eSync/releases/latest/download/f11esync-gui-windows-x64.zip) Rust GUI 程序，解压后运行
+- [点击下载](https://github.com/SaintWe/F11eSync/releases/latest/download/f11esync-rust-windows-x64.zip) Rust CLI 程序，解压后运行
+- [点击下载](https://github.com/SaintWe/F11eSync/releases/latest/download/f11esync-windows-x64.zip) TypeScript CLI 程序，解压后运行
+
 2. 继续后续的步骤
 
 ### macOS / Linux
-
-根据你的平台下载对应的二进制文件
  
-- macOS-x64: [点击下载](https://github.com/SaintWe/F11eSync/releases/latest/download/f11esync-darwin-x64.zip)，Intel
-- macOS-arm64: [点击下载](https://github.com/SaintWe/F11eSync/releases/latest/download/f11esync-darwin-arm64.zip)，Apple M 系列
-- Linux-x64: [点击下载](https://github.com/SaintWe/F11eSync/releases/latest/download/f11esync-linux-x64.zip)
-- Linux-arm64: [点击下载](https://github.com/SaintWe/F11eSync/releases/latest/download/f11esync-linux-arm64.zip)
+#### CLI
 
-1. 下载后解压，运行 `f11esync-xxx` 即可，以解压后文件名为准
+- macOS-TypeScript-x64: [点击下载](https://github.com/SaintWe/F11eSync/releases/latest/download/f11esync-darwin-x64.zip)，Intel
+- macOS-TypeScript-arm64: [点击下载](https://github.com/SaintWe/F11eSync/releases/latest/download/f11esync-darwin-arm64.zip)，Apple M 系列
+- Linux-TypeScript-x64: [点击下载](https://github.com/SaintWe/F11eSync/releases/latest/download/f11esync-linux-x64.zip)
+- Linux-TypeScript-arm64: [点击下载](https://github.com/SaintWe/F11eSync/releases/latest/download/f11esync-linux-arm64.zip)
+- Linux-Rust-x64: [点击下载](https://github.com/SaintWe/F11eSync/releases/latest/download/f11esync-rust-linux-x64.zip)
+- Linux-Rust-arm64: [点击下载](https://github.com/SaintWe/F11eSync/releases/latest/download/f11esync-rust-linux-arm64.zip)
+
+#### GUI
+
+- macOS-Rust-arm64: [点击下载](https://github.com/SaintWe/F11eSync/releases/latest/download/f11esync-gui-darwin-arm64.zip)
+- macOS-Rust-x64: [点击下载](https://github.com/SaintWe/F11eSync/releases/latest/download/f11esync-gui-darwin-x64.zip)
+
 2. 继续后续的步骤
 
 ### 后续步骤
@@ -37,6 +48,73 @@
 - iOS 设备
 - [Scripting](https://apps.apple.com/app/scripting/id1471239139) 应用
 - [Bun](https://bun.com) (用于开发环境)
+
+### Rust 服务端（新）
+
+仓库内提供一个 Rust 版本服务端（目标：完全兼容现有 iOS 脚本的 Socket.IO 协议），路径：`app/`。
+
+构建与运行（需要本机已安装 Rust toolchain）：
+
+```bash
+cd app
+cargo run --release -- --cli -d ../skin
+```
+
+GUI 运行（默认启用 `gui` feature）：
+
+```bash
+cd app
+cargo run --release
+```
+
+#### macOS GUI 打包（arm64 / x86_64）
+
+在 Apple 芯片机器上可以一次性构建 2 份 `.app.zip`（`arm64` / `x86_64`，其中 `x86_64` 可在 Apple 芯片上通过 Rosetta 运行）：
+
+```bash
+./app/scripts/build-macos-gui-apps.sh
+```
+
+产物：
+
+- `dist/f11esync-gui-darwin-arm64.zip`
+- `dist/f11esync-gui-darwin-x64.zip`
+
+#### macOS GUI 安装出现 已损坏/无法打开
+
+**A. 方法**
+
+1. 下载发布的 `F11eSync.app.zip`（解压后是 `F11eSync.app`）
+2. 双击解压得到 `F11eSync.app`，把它拖到 `/Applications`（应用程序）
+3. 第一次打开如果提示“无法打开/来自身份不明的开发者”：
+   - 在 Finder 里对 `F11eSync.app` **右键** → **打开**
+   - 再弹确认框 → 点 **打开**
+4. 如果提示“已损坏，无法打开”（通常是下载隔离标记导致）：
+   - 去 **系统设置 → 隐私与安全性**，页面底部通常会出现 **仍要打开/允许**，点一次再重试
+
+**B. 方法**
+
+当出现“已损坏/无法打开”或你想批量处理时：
+
+```bash
+xattr -dr com.apple.quarantine /Applications/F11eSync.app
+open /Applications/F11eSync.app
+```
+
+> 说明：`xattr ... com.apple.quarantine` 是移除下载隔离标记；不等价于签名/公证。
+
+#### Windows 打包
+
+在 Windows 上执行（Rust CLI + Rust GUI 单文件 zip）：
+
+```powershell
+.\app\scripts\build-windows-rust.ps1
+```
+
+产物：
+
+- `dist/f11esync-rust-windows-x64.zip`
+- `dist/f11esync-gui-windows-x64.zip`
 
 ### 安装依赖
 

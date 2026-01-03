@@ -1,0 +1,58 @@
+[package]
+name = "f11esync"
+version = "1.2.5"
+edition = "2021"
+build = "build.rs"
+
+[package.metadata.bundle]
+name = "F11eSync"
+identifier = "com.saintwe.f11esync"
+category = "public.app-category.utilities"
+short_description = "F11eSync"
+long_description = "F11eSync (Rust GUI)"
+osx_minimum_system_version = "11.0"
+icon = ["assets/icon.icns"]
+resources = ["assets/icon.png", "assets/trayTemplate.png", "assets/trayTemplate@2x.png"]
+osx_info_plist_exts = ["assets/osx-info-plist-ext.xml"]
+
+[features]
+default = ["gui"]
+gui = [
+  "dep:iced",
+  "dep:rfd",
+  "dep:tray-icon",
+  "dep:muda",
+  "dep:dark-light",
+  "dep:image",
+]
+
+[dependencies]
+anyhow = "1"
+axum = "0.7"
+base64 = "0.22"
+clap = { version = "4", features = ["derive"] }
+dark-light = { version = "1", optional = true }
+image = { version = "0.25", default-features = false, features = ["png"], optional = true }
+notify = "6"
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+socketioxide = { version = "0.13", features = ["state"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "fs", "net", "signal"] }
+tower-http = { version = "0.5", features = ["cors"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+walkdir = "2"
+
+# Update check/download
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+
+# GUI deps (optional)
+iced = { version = "0.12", optional = true, features = ["tokio", "multi-window"] }
+rfd = { version = "0.14", optional = true }
+tray-icon = { version = "0.19", optional = true }
+muda = { version = "0.16", optional = true }
+
+[build-dependencies]
+winres = "0.1"

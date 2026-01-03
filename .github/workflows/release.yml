@@ -9,9 +9,9 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build_ts:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,6 +30,125 @@ jobs:
       - name: Pack script
         run: bun run pack:release
 
+      - name: Upload artifacts (TS/Bun)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ts-dist
+          if-no-files-found: error
+          path: |
+            dist/f11esync-linux-x64.zip
+            dist/f11esync-linux-arm64.zip
+            dist/f11esync-darwin-x64.zip
+            dist/f11esync-darwin-arm64.zip
+            dist/f11esync-windows-x64.zip
+            script.zip
+
+  build_rust_cli_linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cross
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cross
+
+      - name: Build Rust CLI (linux)
+        run: |
+          chmod +x app/scripts/build-linux-rust-cli.sh
+          app/scripts/build-linux-rust-cli.sh
+
+      - name: Upload artifacts (Rust CLI linux)
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-cli-linux
+          if-no-files-found: error
+          path: |
+            dist/f11esync-rust-linux-x64.zip
+            dist/f11esync-rust-linux-arm64.zip
+
+  build_rust_cli_windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Rust (windows)
+        shell: pwsh
+        run: |
+          .\\app\\scripts\\build-windows-rust.ps1
+
+      - name: Upload artifacts (Rust CLI windows)
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-cli-windows
+          if-no-files-found: error
+          path: |
+            dist/f11esync-rust-windows-x64.zip
+            dist/f11esync-gui-windows-x64.zip
+
+  build_rust_macos_gui:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Rust macOS GUI (.app) zips
+        run: |
+          cd app
+          ./scripts/build-macos-gui-apps.sh
+
+      - name: Upload artifacts (Rust macOS GUI)
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-macos-gui
+          if-no-files-found: error
+          path: |
+            dist/f11esync-gui-darwin-arm64.zip
+            dist/f11esync-gui-darwin-x64.zip
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [build_ts, build_rust_cli_linux, build_rust_cli_windows, build_rust_macos_gui]
+
+    steps:
+      - name: Download artifacts (TS/Bun)
+        uses: actions/download-artifact@v4
+        with:
+          name: ts-dist
+          path: dist
+
+      - name: Download artifacts (Rust CLI linux)
+        uses: actions/download-artifact@v4
+        with:
+          name: rust-cli-linux
+          path: dist
+
+      - name: Download artifacts (Rust CLI windows)
+        uses: actions/download-artifact@v4
+        with:
+          name: rust-cli-windows
+          path: dist
+
+      - name: Download artifacts (Rust macOS GUI)
+        uses: actions/download-artifact@v4
+        with:
+          name: rust-macos-gui
+          path: dist
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -39,7 +158,13 @@ jobs:
             dist/f11esync-darwin-x64.zip
             dist/f11esync-darwin-arm64.zip
             dist/f11esync-windows-x64.zip
-            script.zip
+            dist/script.zip
+            dist/f11esync-gui-darwin-arm64.zip
+            dist/f11esync-gui-darwin-x64.zip
+            dist/f11esync-gui-windows-x64.zip
+            dist/f11esync-rust-linux-x64.zip
+            dist/f11esync-rust-linux-arm64.zip
+            dist/f11esync-rust-windows-x64.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
