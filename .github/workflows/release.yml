@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -122,6 +123,7 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: [build_ts, build_rust_cli_linux, build_rust_cli_windows, build_rust_macos_gui]
 
     steps:
