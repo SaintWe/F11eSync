@@ -31,7 +31,15 @@ class NodePkg:
 
 
 def run(cmd: list[str], cwd: Path) -> str:
-    p = subprocess.run(cmd, cwd=str(cwd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    p = subprocess.run(
+        cmd,
+        cwd=str(cwd),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
     if p.returncode != 0:
         raise RuntimeError(f"command failed: {' '.join(cmd)}\n{p.stderr.strip()}")
     return p.stdout or ""
