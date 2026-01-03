@@ -31,8 +31,10 @@ class NodePkg:
 
 
 def run(cmd: list[str], cwd: Path) -> str:
-    p = subprocess.run(cmd, cwd=str(cwd), check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    return p.stdout
+    p = subprocess.run(cmd, cwd=str(cwd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if p.returncode != 0:
+        raise RuntimeError(f"command failed: {' '.join(cmd)}\n{p.stderr.strip()}")
+    return p.stdout or ""
 
 
 def read_json(path: Path) -> Any:
@@ -53,6 +55,8 @@ def normalize_repo(repo: Any) -> str | None:
 
 def load_rust_packages() -> list[RustPkg]:
     out = run(["cargo", "metadata", "--format-version=1"], cwd=APP_DIR)
+    if not out.strip():
+        return []
     meta = json.loads(out)
 
     workspace_members = set(meta.get("workspace_members") or [])
@@ -124,27 +128,50 @@ def generate() -> str:
     lines.append("")
 
     lines.append("=== Rust (Cargo) ===")
-    rust = load_rust_packages()
+    rust_error: str | None = None
+    try:
+        rust = load_rust_packages()
+    except Exception as e:  # noqa: BLE001
+        rust = []
+        rust_error = str(e)
     rust_rows = [["Name", "Version", "License", "Repository/Source"]]
     for p in rust:
         repo = p.repository or p.source or ""
         rust_rows.append([p.name, p.version, p.license_expr or "", repo])
     lines.append(fmt_table(rust_rows))
+    if rust_error:
+        lines.append("")
+        lines.append(f"[warn] Rust 依赖清单生成失败：{rust_error}")
     lines.append("")
 
     lines.append("=== Node (TS/Bun) - direct dependencies ===")
-    node = load_node_packages()
+    node_error: str | None = None
+    try:
+        node = load_node_packages()
+    except Exception as e:  # noqa: BLE001
+        node = []
+        node_error = str(e)
     node_rows = [["Name", "Version", "License", "Repository"]]
     for p in node:
         node_rows.append([p.name, p.version or "", p.license_expr or "", p.repository or ""])
     lines.append(fmt_table(node_rows))
+    if node_error:
+        lines.append("")
+        lines.append(f"[warn] Node 依赖清单生成失败：{node_error}")
     lines.append("")
 
     return "\n".join(lines).rstrip() + "\n"
 
 
 def main() -> None:
-    out = generate()
+    try:
+        out = generate()
+    except Exception as e:  # noqa: BLE001
+        out = (
+            "THIRD_PARTY_LICENSES\n\n"
+            "生成第三方许可证清单时发生错误（已降级生成占位文件，避免打包失败）。\n\n"
+            f"[error] {e}\n"
+        )
     DIST_DIR.mkdir(parents=True, exist_ok=True)
     out_path = DIST_DIR / "THIRD_PARTY_LICENSES.txt"
     out_path.write_text(out, encoding="utf-8")

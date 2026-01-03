@@ -22,6 +22,13 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Cache Bun
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock', 'package.json') }}
+
       - name: Install dependencies
         run: bun install
 
@@ -54,6 +61,15 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            dist/rust-target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('app/Cargo.lock') }}
+
       - name: Install cross
         uses: taiki-e/install-action@v2
         with:
@@ -83,6 +99,15 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            dist/rust-target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('app/Cargo.lock') }}
+
       - name: Build Rust (windows)
         shell: pwsh
         run: |
@@ -106,6 +131,16 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin
+            ~/.cargo/registry
+            ~/.cargo/git
+            dist/rust-target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('app/Cargo.lock') }}
 
       - name: Build Rust macOS GUI (.app) zips
         run: |

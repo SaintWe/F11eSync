@@ -17,6 +17,7 @@ $Py = Get-Command python -ErrorAction SilentlyContinue
 if (-not $Py) { $Py = Get-Command python3 -ErrorAction SilentlyContinue }
 if (-not $Py) { throw "python not found (required to generate THIRD_PARTY_LICENSES.txt)" }
 & $Py.Source (Join-Path $RepoRoot "scripts\\generate-third-party-licenses.py") | Out-Null
+if ($LASTEXITCODE -ne 0) { throw "failed to generate THIRD_PARTY_LICENSES.txt (exit=$LASTEXITCODE)" }
 if (!(Test-Path $LicOut)) {
   throw "THIRD_PARTY_LICENSES.txt not found: $LicOut"
 }
