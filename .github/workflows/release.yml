@@ -186,14 +186,13 @@ jobs:
       - name: Download artifacts (all)
         uses: actions/download-artifact@v4
         with:
-          path: .
+          path: dist
           merge-multiple: true
 
       - name: Verify dist assets
         shell: bash
         run: |
           set -euo pipefail
-          ls -la || true
           ls -la dist || true
           files=(
             "dist/f11esync-linux-x64.zip"
