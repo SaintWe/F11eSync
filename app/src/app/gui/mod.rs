@@ -16,6 +16,7 @@ mod atoms;
 mod actions;
 mod atom_helper_config;
 mod atom_helper_log;
+mod atom_helper_path;
 mod commander;
 mod data_officer;
 mod diplomat;
@@ -30,6 +31,8 @@ use state::{BgServer, F11App, Message};
 use styles::{
     AntCheckbox, AntDangerButton, AntPrimaryButton, AntSecondaryButton, AntTextButton, AntTextEditor, AntTextInput,
 };
+
+use atom_helper_path as path_helper;
 
 #[derive(Debug, Clone)]
 pub struct GuiFlags {
@@ -125,7 +128,7 @@ pub struct GuiFlags {
                 app.dir_input.clear();
                 app.last_error = "首次运行请先选择同步目录".to_string();
             } else {
-                app.dir_input = app.dir.display().to_string();
+                app.dir_input = path_helper::display_path(&app.dir);
             }
             actions::push_log(&mut app, "[info] F11eSync GUI 已启动".to_string());
             (app, Command::none())

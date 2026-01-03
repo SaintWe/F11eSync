@@ -4,6 +4,7 @@ use iced::{Command, Size};
 use tokio::sync::oneshot;
 
 use super::atom_helper_log;
+use super::atom_helper_path;
 use super::data_officer;
 use super::{diplomat, BgServer, F11App, Message};
 
@@ -89,9 +90,9 @@ pub fn handle_ui_event(app: &mut F11App, ev: UiEvent) {
 pub fn browse_dir(app: &mut F11App) -> Command<Message> {
     if let Some(p) = diplomat::pick_folder(&app.dir) {
         app.dir = std::fs::canonicalize(&p).unwrap_or(p);
-        app.dir_input = app.dir.display().to_string();
+        app.dir_input = atom_helper_path::display_path(&app.dir);
         app.last_error.clear();
-        push_log(app, format!("[info] 选择目录: {}", app.dir.display()));
+        push_log(app, format!("[info] 选择目录: {}", atom_helper_path::display_path(&app.dir)));
         app.touch_config();
     }
     Command::none()
@@ -108,8 +109,8 @@ pub fn apply_dir_input(app: &mut F11App) {
         Ok(dir) => {
             app.dir = dir;
             app.last_error.clear();
-            push_log(app, format!("[info] 使用目录: {}", app.dir.display()));
-            app.dir_input = app.dir.display().to_string();
+            push_log(app, format!("[info] 使用目录: {}", atom_helper_path::display_path(&app.dir)));
+            app.dir_input = atom_helper_path::display_path(&app.dir);
             app.touch_config();
         }
         Err(err) => {
@@ -173,7 +174,7 @@ pub fn start_stop(app: &mut F11App) -> Command<Message> {
         app.last_error = "请先选择同步目录".to_string();
         return Command::none();
     }
-    if app.dir_input.trim() != app.dir.display().to_string() {
+    if app.dir_input.trim() != atom_helper_path::display_path(&app.dir) {
         apply_dir_input(app);
         if !app.last_error.is_empty() {
             return Command::none();

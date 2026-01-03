@@ -6,6 +6,7 @@ CRATE_DIR="$ROOT_DIR"
 REPO_ROOT="$(cd "$ROOT_DIR/.." && pwd)"
 DIST_DIR="$REPO_ROOT/dist"
 TARGET_DIR="$DIST_DIR/rust-target"
+LICENSES_FILE="$DIST_DIR/THIRD_PARTY_LICENSES.txt"
 
 need_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -17,6 +18,7 @@ need_cmd() {
 need_cmd cargo
 need_cmd rustup
 need_cmd ditto
+need_cmd python3
 
 if ! command -v cargo-bundle >/dev/null 2>&1; then
   echo "cargo-bundle not installed; installing..." >&2
@@ -41,6 +43,11 @@ if [[ "$missing_assets" == "1" ]]; then
 fi
 
 mkdir -p "$DIST_DIR"
+python3 "$REPO_ROOT/scripts/generate-third-party-licenses.py" >/dev/null
+if [[ ! -f "$LICENSES_FILE" ]]; then
+  echo "THIRD_PARTY_LICENSES.txt not found at: $LICENSES_FILE" >&2
+  exit 4
+fi
 
 echo "Ensuring Rust targets..."
 rustup target add aarch64-apple-darwin x86_64-apple-darwin >/dev/null
@@ -76,16 +83,15 @@ OUT_ROOT="$TARGET_DIR/macos-arches"
 mkdir -p "$OUT_ROOT"
 
 zip_with_ditto() {
-  local app_dir="$1"
+  local stage_dir="$1"
   local zip_path="$2"
   (
-    cd "$(dirname "$app_dir")"
     rm -f "$zip_path"
-    DITTO_ARGS=( -c -k --sequesterRsrc --keepParent )
+    DITTO_ARGS=( -c -k --sequesterRsrc )
     if ditto --help 2>&1 | grep -q "zlibCompressionLevel"; then
       DITTO_ARGS+=( --zlibCompressionLevel "${F11ESYNC_ZIP_LEVEL:-9}" )
     fi
-    ditto "${DITTO_ARGS[@]}" "$(basename "$app_dir")" "$zip_path"
+    ditto "${DITTO_ARGS[@]}" "$stage_dir" "$zip_path"
   )
 }
 
@@ -97,6 +103,7 @@ make_app() {
   local out_dir="$OUT_ROOT/$arch"
   local out_app="$out_dir/F11eSync.app"
   local out_zip="$DIST_DIR/$zip_name"
+  local stage_dir="$out_dir/.zip-stage"
 
   rm -rf "$out_dir"
   mkdir -p "$out_dir"
@@ -114,7 +121,12 @@ make_app() {
   fi
 
   echo "Zipping: $out_zip"
-  zip_with_ditto "$out_app" "$out_zip"
+  rm -rf "$stage_dir"
+  mkdir -p "$stage_dir"
+  cp -R "$out_app" "$stage_dir/F11eSync.app"
+  cp "$LICENSES_FILE" "$stage_dir/THIRD_PARTY_LICENSES.txt"
+  zip_with_ditto "$stage_dir" "$out_zip"
+  rm -rf "$stage_dir"
 
   echo "OK: $out_app"
   echo "OK: $out_zip"

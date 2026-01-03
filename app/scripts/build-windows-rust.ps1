@@ -9,13 +9,23 @@ $RepoRoot = (Resolve-Path (Join-Path $AppDir "..")).Path
 
 $DistDir = Join-Path $RepoRoot "dist"
 $TargetRoot = Join-Path $DistDir "rust-target"
+$LicOut = Join-Path $DistDir "THIRD_PARTY_LICENSES.txt"
 
 New-Item -ItemType Directory -Force -Path $DistDir | Out-Null
+
+$Py = Get-Command python -ErrorAction SilentlyContinue
+if (-not $Py) { $Py = Get-Command python3 -ErrorAction SilentlyContinue }
+if (-not $Py) { throw "python not found (required to generate THIRD_PARTY_LICENSES.txt)" }
+& $Py.Source (Join-Path $RepoRoot "scripts\\generate-third-party-licenses.py") | Out-Null
+if (!(Test-Path $LicOut)) {
+  throw "THIRD_PARTY_LICENSES.txt not found: $LicOut"
+}
 
 function Build-And-Zip {
   Param(
     [string]$Name,
     [string[]]$CargoArgs,
+    [string]$BuiltExeName,
     [string]$ExeOutName,
     [string]$ZipOutName
   )
@@ -31,7 +41,7 @@ function Build-And-Zip {
     Pop-Location
   }
 
-  $BuiltExe = Join-Path (Join-Path $TargetRoot $Profile) "f11esync.exe"
+  $BuiltExe = Join-Path (Join-Path $TargetRoot $Profile) $BuiltExeName
   if (!(Test-Path $BuiltExe)) {
     throw "build output not found: $BuiltExe"
   }
@@ -41,12 +51,11 @@ function Build-And-Zip {
 
   $ZipOut = Join-Path $DistDir $ZipOutName
   if (Test-Path $ZipOut) { Remove-Item -Force $ZipOut }
-  Compress-Archive -Path $ExeOut -DestinationPath $ZipOut -CompressionLevel Optimal
+  Compress-Archive -Path @($ExeOut, $LicOut) -DestinationPath $ZipOut -CompressionLevel Optimal
   Remove-Item -Force $ExeOut
 
   Write-Host "OK:" $ZipOut
 }
 
-Build-And-Zip -Name "Rust CLI" -CargoArgs @("--no-default-features") -ExeOutName "f11esync-rust-windows-x64.exe" -ZipOutName "f11esync-rust-windows-x64.zip"
-Build-And-Zip -Name "Rust GUI" -CargoArgs @("--features", "gui") -ExeOutName "f11esync-gui-windows-x64.exe" -ZipOutName "f11esync-gui-windows-x64.zip"
-
+Build-And-Zip -Name "Rust CLI" -CargoArgs @("--no-default-features", "--bin", "f11esync") -BuiltExeName "f11esync.exe" -ExeOutName "f11esync-rust-windows-x64.exe" -ZipOutName "f11esync-rust-windows-x64.zip"
+Build-And-Zip -Name "Rust GUI" -CargoArgs @("--features", "gui", "--bin", "f11esync-gui") -BuiltExeName "f11esync-gui.exe" -ExeOutName "f11esync-gui-windows-x64.exe" -ZipOutName "f11esync-gui-windows-x64.zip"

@@ -41,7 +41,7 @@ jobs:
             dist/f11esync-darwin-x64.zip
             dist/f11esync-darwin-arm64.zip
             dist/f11esync-windows-x64.zip
-            script.zip
+            dist/script.zip
 
   build_rust_cli_linux:
     runs-on: ubuntu-latest
@@ -129,25 +129,25 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ts-dist
-          path: dist
+          path: .
 
       - name: Download artifacts (Rust CLI linux)
         uses: actions/download-artifact@v4
         with:
           name: rust-cli-linux
-          path: dist
+          path: .
 
       - name: Download artifacts (Rust CLI windows)
         uses: actions/download-artifact@v4
         with:
           name: rust-cli-windows
-          path: dist
+          path: .
 
       - name: Download artifacts (Rust macOS GUI)
         uses: actions/download-artifact@v4
         with:
           name: rust-macos-gui
-          path: dist
+          path: .
 
       - name: Create Release
         uses: softprops/action-gh-release@v2

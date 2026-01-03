@@ -16,8 +16,10 @@ need_cmd() {
 
 need_cmd cargo
 need_cmd zip
+need_cmd python3
 
 mkdir -p "$DIST_DIR"
+python3 "$REPO_ROOT/scripts/generate-third-party-licenses.py" >/dev/null
 
 build_x64() {
   echo "Building Rust CLI (linux-x64)..."
@@ -30,7 +32,7 @@ build_x64() {
   (
     cd "$DIST_DIR"
     rm -f "f11esync-rust-linux-x64.zip"
-    zip -9 "f11esync-rust-linux-x64.zip" "f11esync-rust-linux-x64"
+    zip -9 "f11esync-rust-linux-x64.zip" "f11esync-rust-linux-x64" "THIRD_PARTY_LICENSES.txt"
     rm -f "f11esync-rust-linux-x64"
   )
   echo "OK: $DIST_DIR/f11esync-rust-linux-x64.zip"
@@ -47,7 +49,7 @@ build_arm64_native() {
   (
     cd "$DIST_DIR"
     rm -f "f11esync-rust-linux-arm64.zip"
-    zip -9 "f11esync-rust-linux-arm64.zip" "f11esync-rust-linux-arm64"
+    zip -9 "f11esync-rust-linux-arm64.zip" "f11esync-rust-linux-arm64" "THIRD_PARTY_LICENSES.txt"
     rm -f "f11esync-rust-linux-arm64"
   )
   echo "OK: $DIST_DIR/f11esync-rust-linux-arm64.zip"
@@ -65,7 +67,7 @@ build_arm64_cross() {
   (
     cd "$DIST_DIR"
     rm -f "f11esync-rust-linux-arm64.zip"
-    zip -9 "f11esync-rust-linux-arm64.zip" "f11esync-rust-linux-arm64"
+    zip -9 "f11esync-rust-linux-arm64.zip" "f11esync-rust-linux-arm64" "THIRD_PARTY_LICENSES.txt"
     rm -f "f11esync-rust-linux-arm64"
   )
   echo "OK: $DIST_DIR/f11esync-rust-linux-arm64.zip"
@@ -90,4 +92,3 @@ case "$arch" in
     exit 2
     ;;
 esac
-
