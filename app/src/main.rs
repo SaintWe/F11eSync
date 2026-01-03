@@ -24,12 +24,15 @@ fn main() -> Result<()> {
     match cli.mode() {
         RunMode::CheckUpdate => {
             let rt = tokio::runtime::Runtime::new()?;
-            rt.block_on(update::check_update(cli.update_silent))?;
+            rt.block_on(update::check_update(false))?;
             Ok(())
         }
         RunMode::DownloadUpdate => {
             let rt = tokio::runtime::Runtime::new()?;
-            rt.block_on(update::download_update())?;
+            let msg = rt.block_on(update::download_update_message())?;
+            if !msg.trim().is_empty() {
+                println!("{msg}");
+            }
             Ok(())
         }
         RunMode::CliServer => {

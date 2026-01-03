@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use reqwest::Client;
 use serde::Deserialize;
+use std::path::PathBuf;
 use std::time::Duration;
 use tracing::{info, warn};
 
@@ -37,6 +38,28 @@ fn compare_versions(a: &str, b: &str) -> i32 {
 
 fn current_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
+}
+
+fn default_download_dir() -> Option<PathBuf> {
+    if let Some(dir) = std::env::var_os("F11ESYNC_DOWNLOAD_DIR") {
+        if !dir.is_empty() {
+            return Some(PathBuf::from(dir));
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let home = std::env::var_os("USERPROFILE")
+            .or_else(|| std::env::var_os("HOMEPATH"))
+            .map(PathBuf::from)?;
+        return Some(home.join("Downloads"));
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let home = std::env::var_os("HOME").map(PathBuf::from)?;
+        return Some(home.join("Downloads"));
+    }
 }
 
 fn platform_zip_name() -> Option<&'static str> {
@@ -90,6 +113,12 @@ async fn fetch_latest_release() -> Result<Release> {
     Ok(res.json::<Release>().await?)
 }
 
+#[derive(Debug, Clone)]
+pub enum DownloadUpdateResult {
+    Skipped { local: String, remote: String },
+    Downloaded { remote: String, path: PathBuf },
+}
+
 pub async fn check_update_message(silent: bool) -> Result<String> {
     let release = fetch_latest_release().await?;
     let remote = release.tag_name.trim_start_matches('v').to_string();
@@ -122,7 +151,7 @@ pub async fn check_update(silent: bool) -> Result<()> {
     Ok(())
 }
 
-pub async fn download_update() -> Result<()> {
+pub async fn download_update() -> Result<DownloadUpdateResult> {
     let zip_name = platform_zip_name().context("不支持的平台/架构")?;
     let release = fetch_latest_release().await?;
     let remote = release.tag_name.trim_start_matches('v').to_string();
@@ -130,7 +159,7 @@ pub async fn download_update() -> Result<()> {
 
     if compare_versions(&remote, &local) <= 0 {
         info!("当前版本 v{local} 已是最新或高于远程版本 v{remote}，无需下载");
-        return Ok(());
+        return Ok(DownloadUpdateResult::Skipped { local, remote });
     }
 
     let asset = release
@@ -151,16 +180,32 @@ pub async fn download_update() -> Result<()> {
         anyhow::bail!("下载失败: HTTP {}", res.status());
     }
     let bytes = res.bytes().await?;
-    tokio::fs::write(zip_name, &bytes).await?;
 
-    info!("下载完成: ./{zip_name}");
+    let out_dir = default_download_dir()
+        .or_else(|| std::env::current_dir().ok())
+        .context("无法确定下载保存目录")?;
+    let out_path = out_dir.join(zip_name);
+    let _ = tokio::fs::create_dir_all(&out_dir).await;
+
+    tokio::fs::write(&out_path, &bytes).await?;
+
+    info!("下载完成: {}", out_path.display());
     info!("新版本: v{remote}");
     info!("请解压后替换当前程序");
-    Ok(())
+    Ok(DownloadUpdateResult::Downloaded {
+        remote,
+        path: out_path,
+    })
 }
 
-#[cfg(feature = "gui")]
 pub async fn download_update_message() -> Result<String> {
-    download_update().await?;
-    Ok("下载完成（如有新版本）。请查看当前目录下的 zip 文件。".to_string())
+    match download_update().await? {
+        DownloadUpdateResult::Skipped { local, remote } => {
+            Ok(format!("当前已是最新版本: v{local}（远端: v{remote}），无需下载"))
+        }
+        DownloadUpdateResult::Downloaded { remote, path } => Ok(format!(
+            "下载完成: {}（新版本: v{remote}）",
+            path.display()
+        )),
+    }
 }

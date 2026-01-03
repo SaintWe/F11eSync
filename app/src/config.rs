@@ -40,13 +40,9 @@ pub struct Cli {
     #[arg(short = 'u', long)]
     pub update: bool,
 
-    /// 下载新版本（下载 zip 到当前目录后退出）
+    /// 下载新版本（默认下载到 Downloads；可用 F11ESYNC_DOWNLOAD_DIR 覆盖）
     #[arg(short = 'D', long)]
     pub download: bool,
-
-    /// 静默检查更新（仅有新版本时输出）
-    #[arg(long, default_value_t = true)]
-    pub update_silent: bool,
 
     /// 强制无界面运行
     #[arg(long)]

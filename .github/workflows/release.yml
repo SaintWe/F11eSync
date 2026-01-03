@@ -183,29 +183,38 @@ jobs:
     needs: [build_ts, build_rust_cli_linux, build_rust_cli_windows, build_rust_macos_gui]
 
     steps:
-      - name: Download artifacts (TS/Bun)
+      - name: Download artifacts (all)
         uses: actions/download-artifact@v4
         with:
-          name: ts-dist
           path: .
+          merge-multiple: true
 
-      - name: Download artifacts (Rust CLI linux)
-        uses: actions/download-artifact@v4
-        with:
-          name: rust-cli-linux
-          path: .
-
-      - name: Download artifacts (Rust CLI windows)
-        uses: actions/download-artifact@v4
-        with:
-          name: rust-cli-windows
-          path: .
-
-      - name: Download artifacts (Rust macOS GUI)
-        uses: actions/download-artifact@v4
-        with:
-          name: rust-macos-gui
-          path: .
+      - name: Verify dist assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          ls -la || true
+          ls -la dist || true
+          files=(
+            "dist/f11esync-linux-x64.zip"
+            "dist/f11esync-linux-arm64.zip"
+            "dist/f11esync-darwin-x64.zip"
+            "dist/f11esync-darwin-arm64.zip"
+            "dist/f11esync-windows-x64.zip"
+            "dist/script.zip"
+            "dist/f11esync-gui-darwin-arm64.zip"
+            "dist/f11esync-gui-darwin-x64.zip"
+            "dist/f11esync-gui-windows-x64.zip"
+            "dist/f11esync-rust-linux-x64.zip"
+            "dist/f11esync-rust-linux-arm64.zip"
+            "dist/f11esync-rust-windows-x64.zip"
+          )
+          for f in "${files[@]}"; do
+            if [[ ! -f "$f" ]]; then
+              echo "missing release asset: $f" >&2
+              exit 1
+            fi
+          done
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -214,6 +223,7 @@ jobs:
           target_commitish: ${{ github.sha }}
           draft: ${{ github.event_name == 'workflow_dispatch' && inputs.draft }}
           prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease }}
+          fail_on_unmatched_files: true
           files: |
             dist/f11esync-linux-x64.zip
             dist/f11esync-linux-arm64.zip
